@@ -44,6 +44,7 @@ class Lexer:
         self.raw_tokens = []
         if parse:
             self.parse()
+            print(self.raw_tokens)
 
     def parse(self) -> None:
         self.__parse(0, '')
@@ -81,7 +82,7 @@ class Lexer:
         self.__parse(index + 1, word + self.source[index])
 
     def __to_raw_token(self, word: str) -> None:
-        word = word.strip().replace('\n', '').replace(';', '')
+        word = word.strip().replace('\n', '').replace(';', '').replace(',', '')
         if word == '':
             return
         self.raw_tokens.append(word)

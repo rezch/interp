@@ -26,8 +26,15 @@ x + 3;
 x /= 2;
 
 var y = "name";
-y += ' = ';
-y = y + 'x';
+y += '!';
+x;
+x;
+y = y + '321';
+x;
+y;
+y = 3 + x / 2;
+
+
 '''
 
 
@@ -36,8 +43,9 @@ class Interpreter:
         self.tokens = tokens
         self.size = len(tokens)
         self.index = 0
-        self.stack = []
-        self.data = {}  # variables
+        self.stack = list()
+        self.data = dict()  # variables
+        self.parenthesis = None
 
     def terminate(self) -> None:
         ...
@@ -45,7 +53,6 @@ class Interpreter:
     def __process_arithmetic(self):
         var = self.stack.pop()
         op = self.tokens[self.index]
-
         if op == Arithmetic.INC:
             self.data[var.name] += 1
             return
@@ -54,26 +61,66 @@ class Interpreter:
             return
 
         self.index += 1
-        self.run()
+        self.__run()
         value = self.stack.pop()
-        if op == Arithmetic.ADD:
-            self.stack.append(self.data[var.name] + value)
-        elif op == Arithmetic.SUB:
-            self.stack.append(self.data[var.name] - value)
-        elif op == Arithmetic.MULT:
-            self.stack.append(self.data[var.name] * value)
-        elif op == Arithmetic.DIV:
-            self.stack.append(self.data[var.name] / value)
-        elif op == Arithmetic.ADDEQ:
-            self.data[var.name] += value
-        elif op == Arithmetic.SUBEQ:
-            self.data[var.name] -= value
-        elif op == Arithmetic.MULTEQ:
-            self.data[var.name] *= value
-        elif op == Arithmetic.DIVEQ:
-            self.data[var.name] /= value
+        if type(var) == Variable:
+            if op == Arithmetic.ADD:
+                self.stack.append(self.data[var.name] + value)
+            elif op == Arithmetic.SUB:
+                self.stack.append(self.data[var.name] - value)
+            elif op == Arithmetic.MULT:
+                self.stack.append(self.data[var.name] * value)
+            elif op == Arithmetic.DIV:
+                self.stack.append(self.data[var.name] / value)
+            elif op == Arithmetic.ADDEQ:
+                self.data[var.name] += value
+            elif op == Arithmetic.SUBEQ:
+                self.data[var.name] -= value
+            elif op == Arithmetic.MULTEQ:
+                self.data[var.name] *= value
+            elif op == Arithmetic.DIVEQ:
+                self.data[var.name] /= value
+        else:
+            if op == Arithmetic.ADD:
+                self.stack.append(var + value)
+            elif op == Arithmetic.SUB:
+                self.stack.append(var - value)
+            elif op == Arithmetic.MULT:
+                self.stack.append(var * value)
+            elif op == Arithmetic.DIV:
+                self.stack.append(var / value)
+            else:
+                raise SyntaxError
 
-    def run(self) -> None:
+    def __prepare_parenthesis(self) -> bool:
+        last = self.parenthesis
+        if self.tokens[self.index] == Bracket.FUNC_OP:
+            self.parenthesis = self.tokens[self.index]
+            self.index += 1
+            self.run()
+            return False
+        elif self.tokens[self.index] == Bracket.SPACE_OP:
+            self.parenthesis = self.tokens[self.index]
+            self.index += 1
+            self.run()
+            return False
+        elif self.tokens[self.index] == Bracket.FUNC_CL:
+            if last != Bracket.FUNC_OP:
+                raise SyntaxError
+            self.parenthesis = last
+            return True
+        elif self.tokens[self.index] == Bracket.SPACE_CL:
+            if last != Bracket.SPACE_CL:
+                raise SyntaxError
+            self.parenthesis = last
+            return True
+
+    def run(self):
+        while self.index < self.size:
+            self.__run()
+            self.index += 1
+
+    def __run(self) -> None:
         if self.index >= self.size:
             self.terminate()
             return
@@ -86,11 +133,11 @@ class Interpreter:
             if type(name) != Variable or name.lexical or name.name in self.data:
                 raise ValueError
             self.index += 2
-            self.run()
+            self.__run()
             self.data[name.name] = self.stack.pop()
 
         elif type(token) == StdIO:
-            print('stdio', token)
+            print('stdio', self.stack)
 
         elif type(token) == Statement:
             ...
@@ -98,31 +145,32 @@ class Interpreter:
             if token == Operators.AS:
                 lhs = self.stack.pop()
                 self.index += 1
-                self.run()
+                self.__run()
                 rhs = self.stack.pop()
                 self.data[lhs.name] = rhs
+                return
+            pass
         elif type(token) == Logical:
             ...
         elif type(token) == Arithmetic:
             self.__process_arithmetic()
+            return
         elif type(token) == Bracket:
-            ...
+            if self.__prepare_parenthesis():
+                return
         elif type(token) == Endline:
             return
         elif type(token) == Variable:
             if token.lexical == True:
                 self.stack.append(token.name)
             else:
-                if token.name in self.data:
-                    self.stack.append(token)
-                else:
-                    self.index += 1
-                    self.data[token.name] = self.stack.pop()
-                    return
+                if token.name not in self.data.keys():
+                    print(token, self.data.keys(), '--------------')
+                    raise NameError
+                self.stack.append(token)
 
         self.index += 1
-        self.run()
-        # self.stack_revert(stack_snapshot)
+        self.__run()
 
 
 if __name__ == '__main__':
