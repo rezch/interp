@@ -47,6 +47,8 @@ class Arithmetic(Enum):
     SUBEQ = 7  # -=
     MULTEQ = 8  # *=
     DIVEQ = 9  # /=
+    MOD = 10  # %
+    MODEQ = 11  # %=
 
 
 class Bracket(Enum):

@@ -42,142 +42,89 @@ class Interpreter:
     def __init__(self, tokens: []) -> None:
         self.tokens = tokens
         self.size = len(tokens)
-        self.index = 0
-        self.stack = list()
         self.data = dict()  # variables
-        self.parenthesis = None
 
-    def terminate(self) -> None:
-        ...
+    priorities = {
+        Arithmetic.INC: 0,
+        Arithmetic.DEC: 0,
+        Logical.OR: 1,
+        Logical.AND: 2,
+        Logical.NOT: 3,
+        Operators.EQ: 4,
+        Operators.NE: 4,
+        Operators.LT: 4,
+        Operators.GT: 4,
+        Operators.LE: 4,
+        Operators.GE: 4,
+        Arithmetic.ADD: 5,
+        Arithmetic.SUB: 5,
+        Arithmetic.MULT: 6,
+        Arithmetic.DIV: 6,
+        Arithmetic.MOD: 7,
+        # functions
+    }
 
-    def __process_arithmetic(self):
-        var = self.stack.pop()
-        op = self.tokens[self.index]
-        if op == Arithmetic.INC:
-            self.data[var.name] += 1
-            return
-        elif op == Arithmetic.DEC:
-            self.data[var.name] -= 1
-            return
+    brackets = {
+        Bracket.FUNC_OP: 10,
+        Bracket.FUNC_CL: -10,
+    }
 
-        self.index += 1
-        self.__run()
-        value = self.stack.pop()
-        if type(var) == Variable:
-            if op == Arithmetic.ADD:
-                self.stack.append(self.data[var.name] + value)
-            elif op == Arithmetic.SUB:
-                self.stack.append(self.data[var.name] - value)
-            elif op == Arithmetic.MULT:
-                self.stack.append(self.data[var.name] * value)
-            elif op == Arithmetic.DIV:
-                self.stack.append(self.data[var.name] / value)
-            elif op == Arithmetic.ADDEQ:
-                self.data[var.name] += value
-            elif op == Arithmetic.SUBEQ:
-                self.data[var.name] -= value
-            elif op == Arithmetic.MULTEQ:
-                self.data[var.name] *= value
-            elif op == Arithmetic.DIVEQ:
-                self.data[var.name] /= value
-        else:
-            if op == Arithmetic.ADD:
-                self.stack.append(var + value)
-            elif op == Arithmetic.SUB:
-                self.stack.append(var - value)
-            elif op == Arithmetic.MULT:
-                self.stack.append(var * value)
-            elif op == Arithmetic.DIV:
-                self.stack.append(var / value)
+    @staticmethod
+    def process_line(line: []):
+        priority = 0
+        stack = []
+        buffer = []
+        adder = 0
+        for token in line:
+            if type(token) == Variable:
+                stack.append(token)
+                continue
+            if type(token) == Bracket:
+                adder += Interpreter.brackets[token]
+                continue
+            current_priority = Interpreter.priorities[token] + adder
+            if current_priority > priority:
+                priority = current_priority
+                buffer.append(token)
             else:
-                raise SyntaxError
+                stack += buffer[::-1]
+                buffer = [token]
 
-    def __prepare_parenthesis(self) -> bool:
-        last = self.parenthesis
-        if self.tokens[self.index] == Bracket.FUNC_OP:
-            self.parenthesis = self.tokens[self.index]
-            self.index += 1
-            self.run()
-            return False
-        elif self.tokens[self.index] == Bracket.SPACE_OP:
-            self.parenthesis = self.tokens[self.index]
-            self.index += 1
-            self.run()
-            return False
-        elif self.tokens[self.index] == Bracket.FUNC_CL:
-            if last != Bracket.FUNC_OP:
-                raise SyntaxError
-            self.parenthesis = last
-            return True
-        elif self.tokens[self.index] == Bracket.SPACE_CL:
-            if last != Bracket.SPACE_CL:
-                raise SyntaxError
-            self.parenthesis = last
-            return True
+        stack += buffer[::-1]
+        return stack
 
     def run(self):
-        while self.index < self.size:
-            self.__run()
-            self.index += 1
-
-    def __run(self) -> None:
-        if self.index >= self.size:
-            self.terminate()
-            return
-
-        token = self.tokens[self.index]
-
-        if type(token) == Var:
-            self.index += 1
-            name = self.tokens[self.index]
-            if type(name) != Variable or name.lexical or name.name in self.data:
-                raise ValueError
-            self.index += 2
-            self.__run()
-            self.data[name.name] = self.stack.pop()
-
-        elif type(token) == StdIO:
-            print('stdio', self.stack)
-
-        elif type(token) == Statement:
-            ...
-        elif type(token) == Operators:
-            if token == Operators.AS:
-                lhs = self.stack.pop()
-                self.index += 1
-                self.__run()
-                rhs = self.stack.pop()
-                self.data[lhs.name] = rhs
-                return
-            pass
-        elif type(token) == Logical:
-            ...
-        elif type(token) == Arithmetic:
-            self.__process_arithmetic()
-            return
-        elif type(token) == Bracket:
-            if self.__prepare_parenthesis():
-                return
-        elif type(token) == Endline:
-            return
-        elif type(token) == Variable:
-            if token.lexical == True:
-                self.stack.append(token.name)
+        line = []
+        for token in self.tokens:
+            if token == Endline:
+                self.__process_line(line)
+                line = []
             else:
-                if token.name not in self.data.keys():
-                    print(token, self.data.keys(), '--------------')
-                    raise NameError
-                self.stack.append(token)
-
-        self.index += 1
-        self.__run()
+                line.append(token)
 
 
 if __name__ == '__main__':
-    lexer = Lexer(s, parse=True)
-    tokenizer = Tokenizer(lexer.raw_tokens, parse=True)
-    interp = Interpreter(tokenizer.tokens)
-    interp.run()
-    print('--------')
-    print(interp.data)
+    # lexer = Lexer(s, parse=True)
+    # tokenizer = Tokenizer(lexer.raw_tokens, parse=True)
+    # interp = Interpreter(tokenizer.tokens)
+    # interp.run()
+    # print('--------')
+    # print(interp.data)
+
+    # line: 4 + x * (2 - x) - 3
+    l = [
+        Variable(4, is_lexical=True, type_=Var.INT),
+        Arithmetic.ADD,
+        Variable('x'),
+        Arithmetic.MULT,
+        Bracket.FUNC_OP,
+        Variable(2, is_lexical=True, type_=Var.INT),
+        Arithmetic.SUB,
+        Variable('x'),
+        Bracket.FUNC_CL,
+        Arithmetic.SUB,
+        Variable(3, is_lexical=True, type_=Var.INT),
+    ]
+    for t in Interpreter.process_line(l):
+        print(t)
 

@@ -48,7 +48,8 @@ class Tokenizer:
         '+': 0,
         '-': 1,
         '*': 2,
-        '/': 3
+        '/': 3,
+        '%': 10,
     }
 
     OPERATORS_MODULE = {
@@ -65,6 +66,7 @@ class Tokenizer:
         '-=': 7,
         '*=': 8,
         '/=': 9,
+        '%=': 11,
     }
 
     BRACKETS = {

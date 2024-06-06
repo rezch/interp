@@ -7,7 +7,7 @@ class Lexer:
         'ASSIGNMENT': ('=', ),
         'LOGICAL': ('and', 'or', 'not'),
         'PARENTHESIS': ('(', ')', '{', '}', '<', '>'),
-        'ARITHMETIC': ('+', '-', '*', '/')
+        'ARITHMETIC': ('+', '-', '*', '/', '%')
     }
 
     FUNCTIONS = {
